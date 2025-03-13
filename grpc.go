@@ -26,13 +26,13 @@ func GetGRPCInterceptor(serviceID int) grpc.UnaryServerInterceptor {
 			customErr := (*Err)(nil)
 
 			isCustomErr := errors.As(err, &customErr)
-			if isCustomErr {
-				err = customErr
+			if !isCustomErr {
+				err = ToGRPC(customErr)
 			} else {
-				err = New(ErrCodeUnknown, serviceID*10000, err.Error())
+				err = ToGRPC(New(ErrCodeUnknown, serviceID*10000, err.Error()).(*Err))
 			}
 
-			return resp, ToGRPC(customErr)
+			return resp, err
 		}
 
 		return resp, err
