@@ -27,7 +27,7 @@ var grpcCodesMap = map[errCode]codes.Code{
 	ErrCodeForbidden:      codes.PermissionDenied,
 	ErrCodeNotFound:       codes.NotFound,
 	ErrCodeNotAllowed:     codes.NotFound,
-	ErrCodeRequestTimeout: codes.Canceled,
+	ErrCodeRequestTimeout: codes.DeadlineExceeded,
 
 	ErrCodeInternal:       codes.Internal,
 	ErrCodeNotImplemented: codes.Unimplemented,
