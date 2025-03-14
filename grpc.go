@@ -12,32 +12,31 @@ import (
 
 func GetGRPCInterceptor(serviceID int) grpc.UnaryServerInterceptor {
 	if serviceID < 10 || serviceID > 99 {
-		panic("errs.GetGRPCInterceptor(): invalid serviceID")
+	  panic("errs.GetGRPCInterceptor(): invalid serviceID")
 	}
-
+  
 	return func(
-		ctx context.Context,
-		req interface{},
-		_ *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
+	  ctx context.Context,
+	  req interface{},
+	  _ *grpc.UnaryServerInfo,
+	  handler grpc.UnaryHandler,
 	) (resp interface{}, err error) {
-		resp, err = handler(ctx, req)
-		if err != nil {
-			customErr := (*Err)(nil)
-
-			isCustomErr := errors.As(err, &customErr)
-			if !isCustomErr {
-				err = ToGRPC(customErr)
-			} else {
-				err = ToGRPC(New(ErrCodeUnknown, serviceID*10000, err.Error()).(*Err))
-			}
-
-			return resp, err
+	  resp, err = handler(ctx, req)
+	  if err != nil {
+		var customErr *Err
+		if errors.As(err, &customErr) {
+		  // Кастомная ошибка: преобразуем в gRPC-формат
+		  return resp, ToGRPC(customErr)
+		} else {
+		  // Не кастомная ошибка: создаем новую
+		  newErr := New(ErrCodeUnknown, serviceID*10000, err.Error()).(*Err)
+		  return resp, ToGRPC(newErr)
 		}
-
-		return resp, err
+	  }
+	  return resp, nil
 	}
-}
+  }
+  
 
 func LoggingInterceptor(
 	ctx context.Context,
