@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -43,6 +44,7 @@ func LoggingInterceptor(
 	req interface{},
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
+	logToConsole bool,
 ) (resp interface{}, err error) {
 	resp, err = handler(ctx, req)
 	if err != nil {
@@ -61,12 +63,21 @@ func LoggingInterceptor(
 			respJSON = []byte(fmt.Sprintf("%#+v", resp))
 		}
 
-		log.Printf(
-			"error on %s:\nrequest:\n%s\nerror: %s\nresponse:\n%s\n",
+		if logToConsole {
+			log.Printf(
+				"error on %s:\nrequest:\n%s\nerror: %s\nresponse:\n%s\n",
+				infoFullMethod,
+				string(reqJSON),
+				err.Error(),
+				string(respJSON),
+			)
+		}
+
+		zap.L().Error(
 			infoFullMethod,
-			string(reqJSON),
-			err.Error(),
-			string(respJSON),
+			zap.Error(err),
+			zap.String("request", string(reqJSON)),
+			zap.String("response", string(respJSON)),
 		)
 	}
 
