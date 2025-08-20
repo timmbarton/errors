@@ -39,49 +39,86 @@ func GetGRPCInterceptor(serviceID int) grpc.UnaryServerInterceptor {
 	}
 }
 
-func LoggingInterceptor(
-	ctx context.Context,
-	req interface{},
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler,
+func GetLoggingInterceptor(
 	logToConsole bool,
-) (resp interface{}, err error) {
-	resp, err = handler(ctx, req)
-	if err != nil {
-		infoFullMethod := "unknown"
-		if info != nil {
-			infoFullMethod = info.FullMethod
-		}
+) grpc.UnaryServerInterceptor {
+	if logToConsole {
+		return func(
+			ctx context.Context,
+			req interface{},
+			info *grpc.UnaryServerInfo,
+			handler grpc.UnaryHandler,
+		) (resp interface{}, err error) {
+			resp, err = handler(ctx, req)
+			if err != nil {
+				infoFullMethod := "unknown"
+				if info != nil {
+					infoFullMethod = info.FullMethod
+				}
 
-		reqJSON, jsonErr := json.MarshalIndent(req, "", "  ")
-		if jsonErr != nil {
-			reqJSON = []byte(fmt.Sprintf("%#+v", req))
-		}
+				reqJSON, jsonErr := json.MarshalIndent(req, "", "  ")
+				if jsonErr != nil {
+					reqJSON = []byte(fmt.Sprintf("%#+v", req))
+				}
 
-		respJSON, jsonErr := json.MarshalIndent(resp, "", "  ")
-		if jsonErr != nil {
-			respJSON = []byte(fmt.Sprintf("%#+v", resp))
-		}
+				respJSON, jsonErr := json.MarshalIndent(resp, "", "  ")
+				if jsonErr != nil {
+					respJSON = []byte(fmt.Sprintf("%#+v", resp))
+				}
 
-		if logToConsole {
-			log.Printf(
-				"error on %s:\nrequest:\n%s\nerror: %s\nresponse:\n%s\n",
+				log.Printf(
+					"error on %s:\nrequest:\n%s\nerror: %s\nresponse:\n%s\n",
+					infoFullMethod,
+					string(reqJSON),
+					err.Error(),
+					string(respJSON),
+				)
+
+				zap.L().Error(
+					infoFullMethod,
+					zap.Error(err),
+					zap.String("request", string(reqJSON)),
+					zap.String("response", string(respJSON)),
+				)
+			}
+
+			return resp, err
+		}
+	}
+
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (resp interface{}, err error) {
+		resp, err = handler(ctx, req)
+		if err != nil {
+			infoFullMethod := "unknown"
+			if info != nil {
+				infoFullMethod = info.FullMethod
+			}
+
+			reqJSON, jsonErr := json.MarshalIndent(req, "", "  ")
+			if jsonErr != nil {
+				reqJSON = []byte(fmt.Sprintf("%#+v", req))
+			}
+
+			respJSON, jsonErr := json.MarshalIndent(resp, "", "  ")
+			if jsonErr != nil {
+				respJSON = []byte(fmt.Sprintf("%#+v", resp))
+			}
+
+			zap.L().Error(
 				infoFullMethod,
-				string(reqJSON),
-				err.Error(),
-				string(respJSON),
+				zap.Error(err),
+				zap.String("request", string(reqJSON)),
+				zap.String("response", string(respJSON)),
 			)
 		}
 
-		zap.L().Error(
-			infoFullMethod,
-			zap.Error(err),
-			zap.String("request", string(reqJSON)),
-			zap.String("response", string(respJSON)),
-		)
+		return resp, err
 	}
-
-	return resp, err
 }
 
 func ClientInterceptor(
