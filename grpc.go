@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -39,53 +38,11 @@ func GetGRPCInterceptor(serviceID int) grpc.UnaryServerInterceptor {
 	}
 }
 
-func GetLoggingInterceptor(
-	logToConsole bool,
-) grpc.UnaryServerInterceptor {
-	if logToConsole {
-		return func(
-			ctx context.Context,
-			req interface{},
-			info *grpc.UnaryServerInfo,
-			handler grpc.UnaryHandler,
-		) (resp interface{}, err error) {
-			resp, err = handler(ctx, req)
-			if err != nil {
-				infoFullMethod := "unknown"
-				if info != nil {
-					infoFullMethod = info.FullMethod
-				}
+type logger interface {
+	Error(ctx context.Context, msg string, fields ...zap.Field)
+}
 
-				reqJSON, jsonErr := json.MarshalIndent(req, "", "  ")
-				if jsonErr != nil {
-					reqJSON = []byte(fmt.Sprintf("%#+v", req))
-				}
-
-				respJSON, jsonErr := json.MarshalIndent(resp, "", "  ")
-				if jsonErr != nil {
-					respJSON = []byte(fmt.Sprintf("%#+v", resp))
-				}
-
-				log.Printf(
-					"error on %s:\nrequest:\n%s\nerror: %s\nresponse:\n%s\n",
-					infoFullMethod,
-					string(reqJSON),
-					err.Error(),
-					string(respJSON),
-				)
-
-				zap.L().Error(
-					infoFullMethod,
-					zap.Error(err),
-					zap.String("request", string(reqJSON)),
-					zap.String("response", string(respJSON)),
-				)
-			}
-
-			return resp, err
-		}
-	}
-
+func GetLoggingInterceptor(logger logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -109,7 +66,8 @@ func GetLoggingInterceptor(
 				respJSON = []byte(fmt.Sprintf("%#+v", resp))
 			}
 
-			zap.L().Error(
+			logger.Error(
+				ctx,
 				infoFullMethod,
 				zap.Error(err),
 				zap.String("request", string(reqJSON)),
