@@ -41,5 +41,5 @@ func ToGRPC(err *Err) error {
 		return nil
 	}
 
-	return status.New(grpcCodesMap[err.Code], err.Error()).Err()
+	return status.New(grpcCodesMap[err.code], err.Error()).Err()
 }

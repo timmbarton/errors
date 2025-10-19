@@ -2,8 +2,8 @@ package errs
 
 var (
 	ErrUnknown = &Err{
-		Code:    ErrCodeUnknown,
-		Index:   0,
-		Message: "UNKNOWN",
+		code:    ErrCodeUnknown,
+		index:   0,
+		message: "UNKNOWN",
 	}
 )
