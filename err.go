@@ -22,6 +22,19 @@ func New(code errCode, index int, message string) *Err {
 	}
 }
 
+func (e Err) GetCode() int {
+	return int(e.code)
+}
+func (e Err) GetIndex() int {
+	return e.index
+}
+func (e Err) GetMessage() string {
+	return e.message
+}
+func (e Err) GetParams() any {
+	return e.params
+}
+
 func (e Err) Error() string {
 	eJSON, marshalingErr := e.MarshalJSON()
 	if marshalingErr != nil {
