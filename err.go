@@ -77,7 +77,7 @@ func (e *Err) UnmarshalJSON(data []byte) error {
 	e.message = dto.Message
 	e.params = dto.Params
 
-	return e
+	return nil
 }
 
 func (e Err) MarshalJSON() ([]byte, error) {
